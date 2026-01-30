@@ -1,0 +1,59 @@
+import os
+import shutil
+import unittest
+from dotenv import load_dotenv
+from src.nkAzureBlobber import AzureBlobContainerClient
+
+class TestAzureBlobber(unittest.TestCase):
+    def setUp(self):
+
+        load_dotenv()
+        self.tenant_id = os.getenv("blob_TenantID")
+        self.client_id = os.getenv("blob_ClientID")
+        self.client_secret = os.getenv("blob_ClientSecret")
+        self.account_url="https://naestvedprivategpt.blob.core.windows.net"
+        self.container_name="kommuneguides"
+
+        self.client = AzureBlobContainerClient(
+            account_url=self.account_url,
+            container_name=self.container_name,
+            tenant_id=self.tenant_id,
+            client_id=self.client_id,
+            client_secret=self.client_secret,
+        )
+        
+        self.txt_file_content = "Dette er en test fil og må fjernes!"
+        
+        return super().setUp()
+
+    def tearDown(self):
+        return super().tearDown()
+    
+    def test_read_files_basics(self):
+        files = self.client.list_blobs()
+        self.assertTrue(len(files)>0)
+        
+    def test_write_delete_files_basics(self):
+        files = self.client.list_blobs()
+        number_of_files = len(files)
+        
+        sample_blob = "hello_test.txt"
+
+        # 1) Upload: write some content to a blob (or use upload_file for a local file)
+        self.client.write(sample_blob, self.txt_file_content)
+        print(f"Uploaded: {sample_blob}")
+
+        # 2) Verify it's there
+        Contents = self.client.read_text(sample_blob).strip()
+        self.assertEqual(Contents, self.txt_file_content)
+        self.assertTrue(self.client.exists(sample_blob))
+
+        files = self.client.list_blobs()
+        self.assertTrue(len(files) == number_of_files+1)
+
+        # 3) Delete the blob
+        self.client.delete(sample_blob)
+        print(f"Deleted: {sample_blob}")
+
+        files = self.client.list_blobs()
+        self.assertTrue(len(files) == number_of_files)
