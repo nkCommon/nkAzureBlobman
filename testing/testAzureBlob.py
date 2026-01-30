@@ -57,3 +57,28 @@ class TestAzureBlobber(unittest.TestCase):
 
         files = self.client.list_blobs()
         self.assertTrue(len(files) == number_of_files)
+
+    def test_upload_delete_files_basics(self):
+        files = self.client.list_blobs()
+        number_of_files = len(files)
+        
+        sample_blob = "/Users/lakas/git/nkAzureBlobman/sample.txt"
+        file_name = "sample.txt"
+        self.client.upload_file(local_path=sample_blob, blob_name=file_name)
+
+        # 2) Verify it's there
+        Contents = self.client.read_text(file_name).strip()
+        self.assertEqual(Contents, self.txt_file_content)
+        self.assertTrue(self.client.exists(file_name))
+
+        files = self.client.list_blobs()
+        self.assertTrue(len(files) == number_of_files+1)
+
+        # 3) Delete the blob
+        self.client.delete(file_name)
+        print(f"Deleted: {file_name}")
+
+        files = self.client.list_blobs()
+        self.assertTrue(len(files) == number_of_files)
+
+
