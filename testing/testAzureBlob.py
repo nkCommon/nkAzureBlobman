@@ -23,6 +23,7 @@ class TestAzureBlobber(unittest.TestCase):
         )
         
         self.txt_file_content = "Dette er en test fil og må fjernes!"
+        self.txt_file_content2 = "Dette er en test 2 fil og må fjernes!"
         
         return super().setUp()
 
@@ -73,6 +74,18 @@ class TestAzureBlobber(unittest.TestCase):
 
         files = self.client.list_blobs()
         self.assertTrue(len(files) == number_of_files+1)
+
+
+        sample_blob = "/Users/lakas/git/nkAzureBlobman/sample2.txt"
+        self.client.upload_file(local_path=sample_blob, blob_name=file_name)
+        Contents = self.client.read_text(file_name).strip()
+        self.assertEqual(Contents, self.txt_file_content2)
+
+        self.assertTrue(self.client.exists(file_name))
+
+        files = self.client.list_blobs()
+        self.assertTrue(len(files) == number_of_files+1)
+
 
         # 3) Delete the blob
         self.client.delete(file_name)
