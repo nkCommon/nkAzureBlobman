@@ -5,6 +5,8 @@ No azure-identity dependency — only msal + azure-storage-blob.
 
 import os
 import time
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Optional
 
 import msal
@@ -16,6 +18,18 @@ from dotenv import load_dotenv
 
 # Scope for Azure Storage (not Graph — Graph cannot access blob storage)
 STORAGE_SCOPE = "https://storage.azure.com/.default"
+
+
+@dataclass
+class BlobInfo:
+    """Blob metadata from list_blobs(include_properties=True). Use .name, .size, etc."""
+
+    name: str
+    size: Optional[int] = None
+    creation_time: Optional[datetime] = None
+    last_modified: Optional[datetime] = None
+    content_type: Optional[str] = None
+    etag: Optional[str] = None
 
 
 class MSALTokenCredential(TokenCredential):
@@ -103,9 +117,39 @@ class AzureBlobContainerClient:
         blob_client = self._container.get_blob_client(blob_name)
         blob_client.delete_blob()
 
-    def list_blobs(self, name_starts_with: str = "") -> list[str]:
-        """List blob names in the container (optional prefix)."""
-        return [b.name for b in self._container.list_blobs(name_starts_with=name_starts_with)]
+    def list_blobs(
+        self, name_starts_with: str = "", include_properties: bool = False
+    ) -> list[str] | list[BlobInfo]:
+        """
+        List blobs in the container (optional prefix).
+
+        If include_properties is False, returns a list of blob names (str).
+        If include_properties is True, returns a list of BlobInfo with .name, .size,
+        .creation_time, .last_modified, .content_type, .etag.
+        """
+        if not include_properties:
+            return [b.name for b in self._container.list_blobs(name_starts_with=name_starts_with)]
+        result: list[BlobInfo] = []
+        for b in self._container.list_blobs(name_starts_with=name_starts_with):
+            result.append(
+                BlobInfo(
+                    name=b.name,
+                    size=getattr(b, "size", None),
+                    creation_time=getattr(b, "creation_time", None),
+                    last_modified=getattr(b, "last_modified", None),
+                    content_type=(
+                        b.content_settings.content_type
+                        if getattr(b, "content_settings", None)
+                        else None
+                    ),
+                    etag=getattr(b, "etag", None),
+                )
+            )
+        return result
+
+    def list_container_names(self) -> list[str]:
+        """List all container names in the storage account."""
+        return [c["name"] for c in self._client.list_containers()]
 
     def exists(self, blob_name: str) -> bool:
         """Check if a blob exists."""

@@ -33,6 +33,12 @@ class TestAzureBlobber(unittest.TestCase):
     def test_read_files_basics(self):
         files = self.client.list_blobs()
         self.assertTrue(len(files)>0)
+
+    def test_list_containers(self):
+        containers = self.client.list_container_names()
+        self.assertTrue(len(containers)>0)
+        for container in containers:
+            print(container)
         
     def test_write_delete_files_basics(self):
         files = self.client.list_blobs()
@@ -49,8 +55,13 @@ class TestAzureBlobber(unittest.TestCase):
         self.assertEqual(Contents, self.txt_file_content)
         self.assertTrue(self.client.exists(sample_blob))
 
-        files = self.client.list_blobs()
+        files = self.client.list_blobs(include_properties=True)
+        print(files)
         self.assertTrue(len(files) == number_of_files+1)
+        for file in files:
+            if file.name == sample_blob:
+                self.assertEqual(file.size, 36)
+                break
 
         # 3) Delete the blob
         self.client.delete(sample_blob)
