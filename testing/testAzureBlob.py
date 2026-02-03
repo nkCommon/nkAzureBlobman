@@ -31,8 +31,11 @@ class TestAzureBlobber(unittest.TestCase):
         return super().tearDown()
     
     def test_read_files_basics(self):
-        files = self.client.list_blobs()
+        files = self.client.list_blobs(include_properties=True)
         self.assertTrue(len(files)>0)
+        for file in files:
+            self.assertEqual(file.container_name, self.container_name)
+            
 
     def test_list_containers(self):
         containers = self.client.list_container_names()

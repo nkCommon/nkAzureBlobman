@@ -22,9 +22,9 @@ STORAGE_SCOPE = "https://storage.azure.com/.default"
 
 @dataclass
 class BlobInfo:
-    """Blob metadata from list_blobs(include_properties=True). Use .name, .size, etc."""
-
+    """Blob metadata from list_blobs(include_properties=True). Use .name, .size, .container_name, etc."""
     name: str
+    container_name: str = ""
     size: Optional[int] = None
     creation_time: Optional[datetime] = None
     last_modified: Optional[datetime] = None
@@ -134,6 +134,7 @@ class AzureBlobContainerClient:
             result.append(
                 BlobInfo(
                     name=b.name,
+                    container_name=self.container_name,
                     size=getattr(b, "size", None),
                     creation_time=getattr(b, "creation_time", None),
                     last_modified=getattr(b, "last_modified", None),
