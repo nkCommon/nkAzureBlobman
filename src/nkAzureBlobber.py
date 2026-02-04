@@ -62,7 +62,7 @@ class AzureBlobContainerClient:
     def __init__(
         self,
         account_url: str,
-        container_name: str,
+        container_name: str = None,
         *,
         tenant_id: Optional[str] = None,
         client_id: Optional[str] = None,
@@ -85,10 +85,23 @@ class AzureBlobContainerClient:
             account_url=account_url.rstrip("/"),
             credential=credential,
         )
-        self._container = self._client.get_container_client(container_name)
+        if self.container_name is not None:
+            self._container = self._client.get_container_client(self.container_name)
+        else:
+            self._container = None
 
-    def read(self, blob_name: str) -> bytes:
+    def check_container_name(self, container_name: str) -> None:
+        if container_name is not None:
+            self.container_name = container_name
+            self._container = self._client.get_container_client(container_name)
+        if self._container is None:
+            raise ValueError("Container name is required")
+
+
+    def read(self, blob_name: str, container_name: str = None) -> bytes:
         """Download blob contents as bytes."""
+        self.check_container_name(container_name)
+        
         blob_client = self._container.get_blob_client(blob_name)
         return blob_client.download_blob().readall()
 
@@ -96,8 +109,9 @@ class AzureBlobContainerClient:
         """Download blob contents as string."""
         return self.read(blob_name).decode(encoding)
 
-    def write(self, blob_name: str, data: bytes | str, overwrite: bool = True) -> None:
+    def write(self, blob_name: str, data: bytes | str, overwrite: bool = True, container_name: str = None) -> None:
         """Upload bytes or string to a blob (create or overwrite)."""
+        self.check_container_name(container_name)
         if isinstance(data, str):
             data = data.encode("utf-8")
         blob_client = self._container.get_blob_client(blob_name)
@@ -112,13 +126,14 @@ class AzureBlobContainerClient:
         """Overwrite existing blob (same as write with overwrite=True)."""
         self.write(blob_name, data, overwrite=True)
 
-    def delete(self, blob_name: str) -> None:
+    def delete(self, blob_name: str, container_name: str = None) -> None:
+        self.check_container_name(container_name)
         """Delete a blob."""
         blob_client = self._container.get_blob_client(blob_name)
         blob_client.delete_blob()
 
     def list_blobs(
-        self, name_starts_with: str = "", include_properties: bool = False
+        self, name_starts_with: str = "", include_properties: bool = False, container_name: str = None
     ) -> list[str] | list[BlobInfo]:
         """
         List blobs in the container (optional prefix).
@@ -127,6 +142,8 @@ class AzureBlobContainerClient:
         If include_properties is True, returns a list of BlobInfo with .name, .size,
         .creation_time, .last_modified, .content_type, .etag.
         """
+        self.check_container_name(container_name)
+        
         if not include_properties:
             return [b.name for b in self._container.list_blobs(name_starts_with=name_starts_with)]
         result: list[BlobInfo] = []
@@ -152,6 +169,7 @@ class AzureBlobContainerClient:
         """List all container names in the storage account."""
         return [c["name"] for c in self._client.list_containers()]
 
-    def exists(self, blob_name: str) -> bool:
+    def exists(self, blob_name: str, container_name: str = None) -> bool:
+        self.check_container_name(container_name)
         """Check if a blob exists."""
         return self._container.get_blob_client(blob_name).exists()
