@@ -63,7 +63,6 @@ class AzureBlobContainerClient:
         self,
         account_url: str,
         container_name: str = None,
-        *,
         tenant_id: Optional[str] = None,
         client_id: Optional[str] = None,
         client_secret: Optional[str] = None,
