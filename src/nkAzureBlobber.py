@@ -126,8 +126,7 @@ class AzureBlobContainerClient:
         """Overwrite existing blob (same as write with overwrite=True)."""
         self.write(blob_name, data, overwrite=True, container_name=container_name)
 
-    def delete(self, blob_name: str, container_name: str = None) -> None:
-        self.check_container_name(container_name)
+    def delete(self, blob_name: str) -> None:
         """Delete a blob."""
         blob_client = self._container.get_blob_client(blob_name)
         blob_client.delete_blob()
