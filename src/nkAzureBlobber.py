@@ -100,7 +100,6 @@ class AzureBlobContainerClient:
     def read(self, blob_name: str, container_name: str = None) -> bytes:
         """Download blob contents as bytes."""
         self.check_container_name(container_name)
-        
         blob_client = self._container.get_blob_client(blob_name)
         return blob_client.download_blob().readall()
 
@@ -116,14 +115,16 @@ class AzureBlobContainerClient:
         blob_client = self._container.get_blob_client(blob_name)
         blob_client.upload_blob(data, overwrite=overwrite)
 
-    def upload_file(self, blob_name: str, local_path: str, overwrite: bool = True) -> None:
+    def upload_file(self, blob_name: str, local_path: str, overwrite: bool = True, container_name: str = None) -> None:
+        self.check_container_name(container_name)
         """Upload a local file to a blob."""
         with open(local_path, "rb") as f:
             self.write(blob_name, f.read(), overwrite=overwrite)
 
-    def update(self, blob_name: str, data: bytes | str) -> None:
+    def update(self, blob_name: str, data: bytes | str, container_name: str = None) -> None:
+        self.check_container_name(container_name)
         """Overwrite existing blob (same as write with overwrite=True)."""
-        self.write(blob_name, data, overwrite=True)
+        self.write(blob_name, data, overwrite=True, container_name=container_name)
 
     def delete(self, blob_name: str, container_name: str = None) -> None:
         self.check_container_name(container_name)
